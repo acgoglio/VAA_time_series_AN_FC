@@ -58,28 +58,29 @@ set -x
 
   IDX_IN=0
   while [[ $IDX_IN -lt $INSET_NUM ]]; do
-
-    if [[ -d ${ANA_INPATHS[${IDX_IN}]} ]]; then 
+    if [[ -d ${ANA_INPATHS[${IDX_IN}]} ]]; then
+    ## TMP:
+    #if [[ ! -d ${ANA_INPATHS[${IDX_IN}]} ]]; then 
 
       IDX_DATE=$ANA_STARTDATE
       FOUNDNOTFOUND_NUM=0
       while [[ $IDX_DATE -le $ANA_ENDDATE ]]; do
 
         echo "Date: $IDX_DATE"
-        IDX_DATE2=$( date -u -d "$IDX_DATE 2 day" +%Y%m%d )
+        IDX_DATE2=$( date -u -d "$IDX_DATE 10 day" +%Y%m%d )
         ANA_INFILE=$( echo ${ANA_INFILES_TPL[${IDX_IN}]} | sed -e s/%YYYYMMDD%/$IDX_DATE/g | sed -e s/%YYYYMMDD2%/$IDX_DATE2/g )
 
         FOUND_NUM=0
         NOT_FOUND_NUM=0
-        if [[ ! -e ${ANA_INPATHS[$IDX_IN]}/$ANA_INFILE ]]; then 
+        if [[ ! -e ${ANA_INPATHS[$IDX_IN]}/$ANA_INFILE ]]; then  
            FOUND_NUM=$(( $FOUND_NUM + 1 ))
            if [[ ${MOD_FLAG} != 0 ]]; then
               echo "Found infile: $ANA_INFILE"
-              ln -sf ${ANA_INPATHS[$IDX_IN]}/$IDX_DATE/$ANA_INFILE .
+              ln -sf ${ANA_INPATHS[$IDX_IN]}/$IDX_DATE/$ANA_INFILE . 
            fi
         else
            NOT_FOUND_NUM=$(( $NOT_FOUND_NUM + 1 ))
-           echo "NOT Found infile: $ANA_INFILE in path: ${ANA_INPATHS[$IDX_IN]}/${IDX_DATE:0:8}/"
+           echo "NOT Found infile: $ANA_INFILE in path: ${ANA_INPATHS[$IDX_IN]}/"
         fi
 
       FOUNDNOTFOUND_NUM=$(( ${FOUNDNOTFOUND_NUM} +1 ))
@@ -203,15 +204,18 @@ set -x
         # nearest 4 POINTS (if land)
         if [[ $EXTR_POINT_NUM == 4 ]]; then
         # Point selection With land/sea mask (Nan)
-           cdo setctomiss,0.0000 $TSEXT miss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
+           #cdo seltimestep,1,2,3,4,5,6,7,8 $TSEXT ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
+           cp $TSEXT ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
+           cdo setctomiss,0.0000 ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc miss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
            cdo -remapdis,lon=${COO_TS_LON[$TS_IDX]}/lat=${COO_TS_LAT[$TS_IDX]} miss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
            if [[ ${VAR} != "W10" ]]; then
               cdo expr,"${VAR}=${VAR}*1" allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
            else
               # Extract V10 and U10 and compute the res
-              cdo expr,"${VAR}=sqrt(U10M*U10M+V10M*V10M);U10M;V10M" allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
+              cdo expr,"${VAR}=sqrt(U10M*U10M+V10M*V10M)" allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
            fi
            rm -v allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
+           rm -v ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
 
         # nearest sea point
         elif [[ $EXTR_POINT_NUM == 1 ]]; then
@@ -219,7 +223,10 @@ set -x
            LAT_TOCUT=${COO_TS_LAT[$TS_IDX]}
            LON_INT=$( echo $LON_TOCUT | cut -f 1 -d"." )
            LAT_INT=$( echo $LAT_TOCUT | cut -f 1 -d"." )
-           cdo sellonlatbox,$(( ${LON_INT} - 2 )),$(( ${LON_INT} + 2 )),$(( ${LAT_INT} - 2 )),$(( ${LAT_INT} + 2 )) $TSEXT red_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
+           echo "PROVA $TSEXT"
+           #cdo seltimestep,1,2,3,4,5,6,7,8 $TSEXT ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
+           cp $TSEXT ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
+           cdo sellonlatbox,$(( ${LON_INT} - 2 )),$(( ${LON_INT} + 2 )),$(( ${LAT_INT} - 2 )),$(( ${LAT_INT} + 2 )) ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc red_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
            cdo setctomiss,0.0000 red_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc miss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
 
            cdo setmisstonn miss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc nnmiss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
@@ -228,11 +235,12 @@ set -x
               cdo expr,"${VAR}=${VAR}*1" allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
            else
               # Extract V10 and U10 and compute the res
-              cdo expr,"${VAR}=sqrt(U10M*U10M+V10M*V10M);U10M;V10M" allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
+              cdo expr,"${VAR}=sqrt(U10M*U10M+V10M*V10M)" allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
            fi
            rm -v red_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
            rm -v nnmiss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
            rm -v allvar_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_${IDX_NC}.nc
+           rm -v ts_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
         fi
 
         IDX_NC=$(( ${IDX_NC} + 1 ))
@@ -240,8 +248,7 @@ set -x
   
         # Mean comp
         if [[ ${RM_MEAN_FLAG} == 1 ]]; then
-           cp tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_2.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
-           #cdo mergetime tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_*.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
+           cdo mergetime tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_*.nc tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
            cdo timmean tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc mean_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
            cdo sub tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc mean_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc zero_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
 
@@ -253,8 +260,7 @@ set -x
            rm -v zero_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
 
         elif [[ ${RM_MEAN_FLAG} == 0 ]]; then  
-           #cdo mergetime tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_*.nc $NC_TS_OUTFILE
-           cp tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_2.nc $NC_TS_OUTFILE
+           cdo mergetime tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}_*.nc $NC_TS_OUTFILE
 
            rm -v miss_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}.nc
            rm -v tsext_tmp_${TS_IDX}_${COO_TS_NAME[$TS_IDX]}*.nc

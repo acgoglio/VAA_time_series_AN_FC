@@ -97,7 +97,6 @@ for tg_idx,tg in enumerate(input_tg):
            if glob.glob(file_to_open):
               #fh = ncdf.Dataset(file_to_open,mode='r')
               fh = pd.read_csv(file_to_open,sep=';',comment='#',header=None)
-              fh2 = pd.read_csv(file_to_open_long,sep=';',comment='#',header=None)
               # Read time axes and compute time-var
               #time_obs   = fh.variables[input_obs_timevar][:]
               #time_obs_units = fh.variables[input_obs_timevar].getncattr('units')
@@ -110,11 +109,6 @@ for tg_idx,tg in enumerate(input_tg):
               #var_obs  = fh.variables[input_var][:]
               var_obs = fh[1][:] #*100.0
               var_obs = np.array(var_obs)
-              print ('OBS mean: ',np.mean(var_obs))
-              var_obs_long = fh2[1][:] #*100.0
-              var_obs_long = np.array(var_obs_long)
-              print ('OBS mean long: ',np.mean(var_obs_long))
-
               # Interpolate from :00 to :30
               if obs_interp_flag == 1:
                  where_to_interp = np.linspace(0.5,float(len(var_obs))+0.5,216)

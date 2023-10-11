@@ -37,7 +37,7 @@ obs_interp_flag = 0
 input_dir          = '/work/oda/med_dev/Venezia_Acqua_Alta_2019/VAA_atm_ts_new_2022/'
 #
 input_tg   = ['ISMAR_TG']
-input_dat  = ['mod_atm','obs_atm'] # Do not change the order because the obs are used as reference for offset and differences!
+input_dat  = ['mod_atm','obs_atm_false'] # Do not change the order because the obs are used as reference for offset and differences!
 input_type = ['FC1','FC2','FC3'] #,'AN']
 input_res  = ['10'] #['08','08sub','10'] # Do not change the order 
 input_sys  = ['EAS56'] #['EAS4','EAS5','EAS6','EAS56'] # The last must be 'EAS56'
@@ -51,11 +51,6 @@ input_mod_timevar = 'time'
 colors = pl.cm.Greys(np.linspace(0.5,0.9,3)) #13
 
 #############################
-# Defn running mean for obs
-def running_mean(x, N):
-    cumsum = np.cumsum(np.insert(x, 0, 0))
-    return (cumsum[N:] - cumsum[:-N]) / float(N)
-
 # Loop on tide-gauges
 for tg_idx,tg in enumerate(input_tg):
 
@@ -66,7 +61,7 @@ for tg_idx,tg in enumerate(input_tg):
     for dat_idx,dat in enumerate(input_dat):
 
         # OBS
-        if dat == 'obs_atm':
+        if dat == 'obs_atm_false':
            # input files name
            file_to_open = input_dir+'/'+tg+'_'+dat+'.csv' #+'.nc'
            print ('Open files: ',file_to_open)
@@ -87,10 +82,6 @@ for tg_idx,tg in enumerate(input_tg):
               #var_obs  = fh.variables[input_var][:]
               var_obs = fh[1][:] #*100.0
               var_obs = np.array(var_obs)
-              print ('Pre',len(var_obs))
-              var_obs = running_mean(var_obs,12)
-              var_obs = var_obs[::12]
-              print ('Post',len(var_obs))
               # Interpolate from :00 to :30
               if obs_interp_flag == 1:
                  where_to_interp = np.linspace(0.5,float(len(var_obs))+0.5,216)
